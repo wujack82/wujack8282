@@ -1,26 +1,443 @@
+
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>내 움직이는 웹사이트</title>
+    <title>당근마켓 | 당신 근처의 따뜻한 커뮤니티</title>
+    
+    <!-- CDN 라이브러리 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&family=Playfair+Display:ital,wght@1,700&display=swap" rel="stylesheet">
+    
     <style>
         body {
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: #000; /* 배경색 검정 */
+            font-family: 'Inter', sans-serif;
+            background-color: #000000;
+            color: #fafafa;
+            overflow-x: hidden;
         }
-        img {
-            max-width: 100%;
-            height: auto;
+        .font-serif {
+            font-family: 'Playfair Display', serif;
+        }
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #000000;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #27272a;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3f3f46;
+        }
+        
+        /* 비디오 스크롤 컨테이너 */
+        #hero-container {
+            height: 400vh;
+        }
+        #sticky-video-wrap {
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            width: 100%;
+            overflow: hidden;
+            background: #000;
+        }
+        video#bg-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0;
+            transition: opacity 1s ease;
+        }
+        video#bg-video.ready {
+            opacity: 1;
+        }
+
+        /* 마키 애니메이션 */
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .marquee-content {
+            display: flex;
+            animation: marquee 40s linear infinite;
+        }
+
+        /* 아코디언 */
+        .faq-item .answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+            opacity: 0;
+        }
+        .faq-item.active .answer {
+            max-height: 200px;
+            opacity: 1;
+        }
+        .faq-item.active .icon-plus { display: none; }
+        .faq-item .icon-minus { display: none; }
+        .faq-item.active .icon-minus { display: block; }
+
+        .theme-tint {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 999;
+            opacity: 0.05;
+            transition: background-color 1s ease;
         }
     </style>
 </head>
 <body>
-    <img src="mains.webp" alt="움직이는 배경">
+
+    <div class="theme-tint" id="global-tint"></div>
+
+    <!-- 로딩 인디케이터 -->
+    <div id="loader" class="fixed inset-0 flex flex-col items-center justify-center z-[100] bg-black">
+        <i data-lucide="loader-2" class="w-8 h-8 animate-spin text-white/40 mb-4"></i>
+        <span class="text-[10px] tracking-[0.5em] text-white/40 uppercase font-bold">이웃을 연결하는 중...</span>
+    </div>
+
+    <!-- 히어로 섹션 -->
+    <section id="hero-container">
+        <div id="sticky-video-wrap">
+            <video id="bg-video" muted playsinline preload="auto" src="https://wujack8282-mrha.vercel.app/mains.webp"></video>
+            
+            <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black pointer-events-none"></div>
+
+            <div class="relative z-20 h-full w-full max-w-7xl mx-auto px-6 lg:px-12 flex items-center">
+                <div id="hero-text-content" class="max-w-xl opacity-0 translate-y-10">
+                    <span id="variant-subtitle" class="inline-block text-xs tracking-[0.4em] uppercase mb-4 font-black text-[#FF7E36]"></span>
+                    <h1 id="variant-name" class="text-7xl lg:text-9xl font-black uppercase tracking-tighter leading-[0.9] mb-8 text-white"></h1>
+                    <p id="variant-description" class="text-lg text-zinc-300 font-light leading-relaxed mb-10 max-w-sm"></p>
+                    <div class="flex gap-4">
+                        <button id="main-cta" class="px-10 py-5 bg-white text-black font-black rounded-full hover:bg-zinc-200 transition-all uppercase tracking-widest text-[10px]">앱 다운로드</button>
+                        <button class="px-10 py-5 border border-white/20 rounded-full hover:bg-white/5 transition-all uppercase tracking-widest text-[10px] backdrop-blur-xl">이웃 만나기</button>
+                    </div>
+                </div>
+
+                <!-- 네비게이션 컨트롤 -->
+                <div class="absolute right-6 lg:right-12 top-1/2 -translate-y-1/2 flex flex-col items-center gap-12">
+                    <div class="flex flex-col items-center gap-4">
+                        <span id="variant-index" class="text-4xl font-serif italic text-white/20">01</span>
+                        <div class="h-20 w-[1px] bg-white/20"></div>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <button id="prev-btn" class="p-5 rounded-full border border-white/10 hover:border-white/40 bg-white/5 backdrop-blur-3xl group transition-all">
+                            <i data-lucide="chevron-up" class="w-5 h-5 group-hover:-translate-y-0.5 transition-transform"></i>
+                        </button>
+                        <button id="next-btn" class="p-5 rounded-full border border-white/10 hover:border-white/40 bg-white/5 backdrop-blur-3xl group transition-all">
+                            <i data-lucide="chevron-down" class="w-5 h-5 group-hover:translate-y-0.5 transition-transform"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="scroll-guide" class="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 text-white/40 transition-opacity duration-500">
+                <div class="w-5 h-8 border border-white/30 rounded-full flex justify-center p-1">
+                    <div class="w-1 h-1 bg-white/60 rounded-full animate-bounce"></div>
+                </div>
+                <span class="text-[8px] uppercase tracking-[0.4em] font-black">스크롤하여 경험하세요</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- 파트너 마키 섹션 -->
+    <section class="py-32 bg-zinc-950 overflow-hidden border-t border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-6 mb-12">
+            <h3 class="text-[10px] tracking-[0.5em] uppercase text-white/30 font-bold text-center">대한민국의 신뢰받는 동네 이웃들</h3>
+        </div>
+        <div class="relative overflow-hidden">
+            <div class="marquee-content gap-20 py-4">
+                <!-- 자바스크립트로 채워짐 -->
+            </div>
+        </div>
+    </section>
+
+    <!-- 신뢰 테이블 섹션 -->
+    <section class="py-32 px-6 lg:px-12 max-w-7xl mx-auto">
+        <div id="trust-reveal">
+            <h2 class="text-4xl lg:text-6xl font-black uppercase tracking-tighter mb-16 flex items-center gap-4 text-white">
+                동네 신뢰 지표
+                <div class="flex-1 h-[1px] bg-white/10"></div>
+            </h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-white/10 text-[10px] uppercase tracking-[0.3em] text-white/40">
+                            <th class="py-6 px-4 font-normal">신뢰 지표</th>
+                            <th class="py-6 px-4 font-normal">신뢰의 깊이</th>
+                            <th class="py-6 px-4 font-normal">상세 설명 / 이웃의 정</th>
+                        </tr>
+                    </thead>
+                    <tbody id="trust-table-body" class="divide-y divide-white/5">
+                        <!-- 자바스크립트로 채워짐 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA 섹션 (연결의 중심) -->
+    <section class="py-32 px-6 lg:px-12 bg-black overflow-hidden">
+        <div class="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
+            <div id="cta-text-reveal">
+                <h2 id="cta-heading" class="text-5xl lg:text-7xl font-black uppercase tracking-tighter leading-none mb-8">
+                    따뜻한 <br> <span id="cta-accent" class="text-[#FF7E36]">연결의 중심</span>
+                </h2>
+                <p class="text-xl text-zinc-400 font-light leading-relaxed mb-12">
+                    이웃과 나누는 따뜻한 정, 우리 동네 커뮤니티의 풍요로움을 경험하세요. 모든 대화는 연결의 시작이며, 모든 거래는 우리 동네에 심어지는 신뢰의 씨앗입니다.
+                </p>
+                <button class="cta-btn group relative px-10 py-5 rounded-full overflow-hidden transition-all bg-white text-black font-black uppercase tracking-widest text-sm">
+                    당근하러 가기
+                </button>
+            </div>
+            <div id="cta-image-reveal" class="relative aspect-square group overflow-hidden rounded-2xl border border-white/5">
+                <img src="https://wujack8282-mrha.vercel.app/%EC%82%AC%EC%A7%841.jpg" alt="따뜻한 동네 일상" class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105">
+                <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60"></div>
+                <div class="absolute bottom-8 left-8 right-8 text-white">
+                    <p class="text-sm font-serif italic text-white/90">"아이들이 마음 놓고 뛰어놀 수 있는 따뜻한 동네, 당근마켓이 꿈꾸는 가장 아름다운 풍경입니다."</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ 및 푸터 -->
+    <footer class="bg-black pt-32">
+        <div class="max-w-7xl mx-auto px-6 lg:px-12 mb-32">
+            <h2 class="text-4xl lg:text-6xl font-black uppercase tracking-tighter mb-16 text-white">당근 궁금증</h2>
+            <div id="faq-list" class="flex flex-col">
+                <!-- 자바스크립트로 채워짐 -->
+            </div>
+        </div>
+
+        <div class="border-t border-white/5 py-20 px-6 lg:px-12 bg-zinc-950/50">
+            <div class="max-w-7xl mx-auto flex flex-col lg:flex-row justify-between items-start lg:items-center gap-12">
+                <div>
+                    <h3 class="text-3xl font-black uppercase tracking-tighter mb-4 text-[#FF7E36]">당근마켓</h3>
+                    <p class="text-zinc-500 text-sm uppercase tracking-widest font-bold">당신 근처의 따뜻한 커뮤니티.</p>
+                </div>
+                
+                <div class="flex gap-12 text-sm uppercase tracking-widest font-bold text-zinc-400">
+                    <a href="#" class="hover:text-[#FF7E36] transition-colors">이용약관</a>
+                    <a href="#" class="hover:text-[#FF7E36] transition-colors">개인정보처리방침</a>
+                    <a href="#" class="hover:text-[#FF7E36] transition-colors">고객센터</a>
+                </div>
+
+                <div class="flex gap-6">
+                    <a href="https://www.instagram.com/0.0jin__/" target="_blank" class="p-3 rounded-full border border-white/10 hover:border-[#FF7E36] transition-all text-zinc-400 hover:text-[#FF7E36]">
+                        <i data-lucide="instagram" class="w-5 h-5"></i>
+                    </a>
+                    <a href="https://www.instagram.com/0.0jin__/" target="_blank" class="p-3 rounded-full border border-white/10 hover:border-[#FF7E36] transition-all text-zinc-400 hover:text-[#FF7E36]">
+                        <i data-lucide="message-circle" class="w-5 h-5"></i>
+                    </a>
+                    <a href="https://www.instagram.com/0.0jin__/" target="_blank" class="p-3 rounded-full border border-white/10 hover:border-[#FF7E36] transition-all text-zinc-400 hover:text-[#FF7E36]">
+                        <i data-lucide="facebook" class="w-5 h-5"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // --- 데이터 정의 ---
+        const VARIANTS = [
+            {
+                name: "TRADING",
+                subtitle: "당신 근처의 따뜻한 거래",
+                description: "멀리 갈 필요 없어요. 우리 동네 이웃과 믿고 거래하는 즐거움을 경험해 보세요. 정이 넘치는 따뜻한 나눔이 시작됩니다.",
+                themeColor: "#FF7E36",
+                startFrame: 0,
+                frameCount: 100
+            },
+            {
+                name: "LIFE",
+                subtitle: "동네 사람들의 진짜 이야기",
+                description: "우리 동네 맛집, 분실물 찾기, 취미 생활 공유까지. 이웃과 나누는 소소한 일상이 당신의 삶을 더욱 풍요롭게 만듭니다.",
+                themeColor: "#FFFFFF",
+                startFrame: 101,
+                frameCount: 80
+            },
+            {
+                name: "TRUST",
+                subtitle: "이웃과 함께하는 신뢰",
+                description: "매너온도로 확인하는 이웃의 진심. 서로를 배려하는 따뜻한 마음이 모여 더 살기 좋은 우리 동네를 만듭니다.",
+                themeColor: "#FF7E36",
+                startFrame: 181,
+                frameCount: 40
+            }
+        ];
+
+        const PARTNERS = [
+            "동네 소상공인 사장님", "중소기업 파트너", "지역 서비스 업체", "우리 동네 이웃들",
+            "커뮤니티 리더", "열정적인 빵집 사장님", "친환경 농부님", "지금을 읽는 당신"
+        ];
+
+        const TRUST_ROWS = [
+            { label: "매너온도 99.9℃", deep: "독보적인 따뜻함", desc: "수만 명의 이웃이 인정한 우리 동네 최고의 신뢰 지표이자 자부심" },
+            { label: "재거래 희망률 100%", deep: "다시 만나고 싶은 이웃", desc: "한 번의 거래가 좋은 인연이 되어 증명되는 실질적인 만족도의 정점" },
+            { label: "동네인증 전문가", deep: "검증된 지역 거주자", desc: "수천 번의 위치 인증을 통해 확인된, 진짜 우리 동네를 잘 아는 이웃" },
+            { label: "나눔 배지 획득", deep: "이웃 사랑의 증표", desc: "안 쓰는 물건을 나누고 지구를 지키며 이웃에게 따뜻함을 전한 명예" }
+        ];
+
+        const FAQS = [
+            { q: "매너온도는 어떻게 올라가나요?", a: "거래 후 이웃에게 받은 따뜻한 칭찬, 후기, 나눔 등이 모여 매너온도가 올라갑니다. 36.5도에서 시작해 이웃의 정이 깊어질수록 온도는 높아져요." },
+            { q: "직거래 시 주의할 점이 있나요?", a: "가급적 사람들의 왕래가 잦은 공공장소에서 만나세요. 당근채팅을 통해 충분히 대화하고, 물건 상태를 꼼꼼히 확인하는 것이 좋습니다." },
+            { q: "동네인증은 왜 필요한가요?", a: "당근마켓은 '우리 동네' 이웃 간의 신뢰를 기반으로 합니다. 거주 지역을 GPS로 인증함으로써 실제로 만날 수 있는 이웃과만 소통할 수 있도록 돕습니다." },
+            { q: "무료 나눔은 어떻게 하나요?", a: "물건 등록 시 '나눔' 태그를 선택하세요. 필요 없는 물건이 누군가에게는 소중한 선물이 되어 우리 동네 환경을 지킵니다." }
+        ];
+
+        // --- 초기화 및 제어 ---
+        let currentIdx = 0;
+        const video = document.getElementById('bg-video');
+        const loader = document.getElementById('loader');
+        const heroText = document.getElementById('hero-text-content');
+
+        // 아이콘 초기화
+        lucide.createIcons();
+
+        // 1. 비디오 로딩 및 스크롤 제어
+        gsap.registerPlugin(ScrollTrigger);
+
+        video.addEventListener('loadedmetadata', () => {
+            loader.style.display = 'none';
+            video.classList.add('ready');
+            gsap.to(heroText, { opacity: 1, y: 0, duration: 1, delay: 0.5 });
+            updateContent();
+        });
+
+        // 스크롤 가이드 숨기기
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 100) {
+                document.getElementById('scroll-guide').style.opacity = '0';
+            } else {
+                document.getElementById('scroll-guide').style.opacity = '1';
+            }
+        });
+
+        // 비디오 프레임 스크러빙
+        ScrollTrigger.create({
+            trigger: "#hero-container",
+            start: "top top",
+            end: "bottom bottom",
+            scrub: 1,
+            onUpdate: (self) => {
+                if (video.duration) {
+                    const variant = VARIANTS[currentIdx];
+                    const FPS = 24;
+                    const startT = variant.startFrame / FPS;
+                    const durationT = variant.frameCount / FPS;
+                    const targetT = startT + (self.progress * durationT);
+                    video.currentTime = Math.min(targetT, video.duration - 0.1);
+                }
+            }
+        });
+
+        // 2. 변형(Variant) 업데이트 함수
+        function updateContent() {
+            const variant = VARIANTS[currentIdx];
+            
+            // 텍스트 업데이트 (애니메이션과 함께)
+            gsap.to(heroText, { opacity: 0, y: 10, duration: 0.3, onComplete: () => {
+                document.getElementById('variant-name').innerText = variant.name;
+                document.getElementById('variant-subtitle').innerText = variant.subtitle;
+                document.getElementById('variant-subtitle').style.color = variant.themeColor;
+                document.getElementById('variant-description').innerText = variant.description;
+                document.getElementById('variant-index').innerText = `0${currentIdx + 1}`;
+                document.getElementById('main-cta').style.boxShadow = `0 0 40px ${variant.themeColor}33`;
+                
+                document.getElementById('global-tint').style.backgroundColor = variant.themeColor;
+                document.getElementById('cta-accent').style.color = variant.themeColor;
+                
+                gsap.to(heroText, { opacity: 1, y: 0, duration: 0.5 });
+            }});
+
+            // 테이블 텍스트 색상 업데이트
+            document.querySelectorAll('.table-accent').forEach(el => {
+                el.style.color = variant.themeColor === "#FFFFFF" ? "#FFFFFF" : "#FF7E36";
+            });
+        }
+
+        // 버튼 클릭 이벤트
+        document.getElementById('next-btn').addEventListener('click', () => {
+            currentIdx = (currentIdx + 1) % VARIANTS.length;
+            updateContent();
+            ScrollTrigger.refresh();
+        });
+        document.getElementById('prev-btn').addEventListener('click', () => {
+            currentIdx = (currentIdx - 1 + VARIANTS.length) % VARIANTS.length;
+            updateContent();
+            ScrollTrigger.refresh();
+        });
+
+        // 3. 마키 생성
+        const marqueeContainer = document.querySelector('.marquee-content');
+        const marqueeItems = [...PARTNERS, ...PARTNERS, ...PARTNERS, ...PARTNERS];
+        marqueeItems.forEach(text => {
+            const span = document.createElement('span');
+            span.className = "text-3xl lg:text-5xl font-black uppercase tracking-tighter text-white/10 hover:text-white/60 transition-colors cursor-default select-none shrink-0";
+            span.innerText = text;
+            marqueeContainer.appendChild(span);
+        });
+
+        // 4. 테이블 생성
+        const tableBody = document.getElementById('trust-table-body');
+        TRUST_ROWS.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.className = "group hover:bg-white/[0.02] transition-colors";
+            tr.innerHTML = `
+                <td class="py-8 px-4 font-bold tracking-tight text-lg group-hover:pl-6 transition-all text-white">${row.label}</td>
+                <td class="py-8 px-4 text-white/60 font-light">${row.deep}</td>
+                <td class="py-8 px-4 text-sm italic font-serif table-accent transition-colors">${row.desc}</td>
+            `;
+            tableBody.appendChild(tr);
+        });
+
+        // 5. FAQ 생성 및 이벤트
+        const faqList = document.getElementById('faq-list');
+        FAQS.forEach((faq, i) => {
+            const div = document.createElement('div');
+            div.className = `faq-item border-b border-white/10 ${i === 0 ? 'active' : ''}`;
+            div.innerHTML = `
+                <button class="w-full py-8 flex justify-between items-center text-left hover:text-white transition-colors group">
+                    <span class="text-xl lg:text-2xl font-bold uppercase tracking-tight group-hover:text-[#FF7E36] transition-colors">${faq.q}</span>
+                    <i data-lucide="plus" class="icon-plus w-6 h-6 shrink-0"></i>
+                    <i data-lucide="minus" class="icon-minus w-6 h-6 shrink-0 text-[#FF7E36]"></i>
+                </button>
+                <div class="answer">
+                    <p class="pb-8 text-zinc-400 font-light leading-relaxed max-w-2xl">${faq.a}</p>
+                </div>
+            `;
+            div.querySelector('button').addEventListener('click', () => {
+                const isActive = div.classList.contains('active');
+                document.querySelectorAll('.faq-item').forEach(item => item.classList.remove('active'));
+                if (!isActive) div.classList.add('active');
+            });
+            faqList.appendChild(div);
+        });
+        lucide.createIcons(); // 동적 생성된 아이콘 재실행
+
+        // 6. 등장 애니메이션 (GSAP ScrollTrigger)
+        gsap.from("#trust-reveal", {
+            scrollTrigger: { trigger: "#trust-reveal", start: "top 80%" },
+            opacity: 0, y: 40, duration: 1
+        });
+        gsap.from("#cta-text-reveal", {
+            scrollTrigger: { trigger: "#cta-text-reveal", start: "top 80%" },
+            opacity: 0, x: -50, duration: 1
+        });
+        gsap.from("#cta-image-reveal", {
+            scrollTrigger: { trigger: "#cta-image-reveal", start: "top 80%" },
+            opacity: 0, scale: 0.95, duration: 1
+        });
+
+    </script>
 </body>
 </html>
